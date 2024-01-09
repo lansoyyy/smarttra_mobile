@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:smarttra/screens/buses_screen.dart';
 import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/button_widget.dart';
 import 'package:smarttra/widgets/text_widget.dart';
@@ -43,7 +44,10 @@ class MapScreenState extends State<MapScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const BusesScreen()));
+            },
             icon: Icon(
               Icons.bus_alert_outlined,
               color: primary,
