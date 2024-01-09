@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 
 class ButtonWidget extends StatelessWidget {
@@ -20,7 +21,7 @@ class ButtonWidget extends StatelessWidget {
       this.width = 300,
       this.fontSize = 18,
       this.height = 50,
-      this.color = Colors.amber})
+      this.color = const Color(0xff374259)})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
