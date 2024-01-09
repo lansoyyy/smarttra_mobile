@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:smarttra/screens/map_screen.dart';
 import 'package:smarttra/widgets/button_widget.dart';
 
 class LandingScreen extends StatelessWidget {
@@ -21,7 +22,10 @@ class LandingScreen extends StatelessWidget {
           ),
           ButtonWidget(
             label: 'Continue',
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const MapScreen()));
+            },
           ),
         ],
       )),
