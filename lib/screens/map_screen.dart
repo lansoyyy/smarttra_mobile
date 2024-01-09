@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/button_widget.dart';
+import 'package:smarttra/widgets/text_widget.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -26,20 +28,147 @@ class MapScreenState extends State<MapScreen> {
       tilt: 59.440717697143555,
       zoom: 19.151926040649414);
 
+  final searchController = TextEditingController();
+  String nameSearched = '';
+
+  final searchController1 = TextEditingController();
+  String nameSearched1 = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GoogleMap(
-        mapType: MapType.hybrid,
-        initialCameraPosition: _kGooglePlex,
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-        },
+      appBar: AppBar(
+        title: TextWidget(text: 'Map', fontSize: 18),
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.bus_alert_outlined,
+              color: primary,
+            ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            GoogleMap(
+              mapType: MapType.hybrid,
+              initialCameraPosition: _kGooglePlex,
+              onMapCreated: (GoogleMapController controller) {
+                _controller.complete(controller);
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Container(
+                width: 500,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: primary.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20, right: 20),
+                      child: Container(
+                        height: 40,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: Colors.black,
+                            ),
+                            borderRadius: BorderRadius.circular(100)),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 10, right: 10),
+                          child: TextFormField(
+                            style: const TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Regular',
+                                fontSize: 14),
+                            onChanged: (value) {
+                              setState(() {
+                                nameSearched = value;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              filled: true,
+                              suffixIcon: Icon(Icons.location_on),
+                              fillColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: Colors.black,
+                              ),
+                              hintText: 'From:',
+                              hintStyle: TextStyle(fontFamily: 'QRegular'),
+                            ),
+                            controller: searchController,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(
+                          left: 20, right: 20, top: 10, bottom: 10),
+                      child: Divider(
+                        color: Colors.white,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20, right: 20),
+                      child: Container(
+                        height: 40,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: Colors.black,
+                            ),
+                            borderRadius: BorderRadius.circular(100)),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 10, right: 10),
+                          child: TextFormField(
+                            style: const TextStyle(
+                                color: Colors.black,
+                                fontFamily: 'Regular',
+                                fontSize: 14),
+                            onChanged: (value) {
+                              setState(() {
+                                nameSearched1 = value;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              suffixIcon: Icon(Icons.location_on),
+                              filled: true,
+                              fillColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: Colors.black,
+                              ),
+                              hintText: 'To:',
+                              hintStyle: TextStyle(fontFamily: 'QRegular'),
+                            ),
+                            controller: searchController1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: primary,
         onPressed: _goToTheLake,
-        label: const Text('To the lake!'),
-        icon: const Icon(Icons.directions_boat),
+        label: const Text('Continue'),
+        icon: const Icon(Icons.my_location),
       ),
     );
   }
