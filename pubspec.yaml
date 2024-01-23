@@ -40,6 +40,10 @@ dependencies:
   get_storage:
   geocoding: ^2.1.0
   geolocator: ^9.0.2
+  firebase_core:
+  cloud_firestore:
+  firebase_storage:
+  firebase_auth:
 
 dev_dependencies:
   flutter_test:
