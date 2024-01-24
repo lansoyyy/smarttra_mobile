@@ -14,7 +14,7 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
-  List<String> values = ['C3', 'B2', 'A1', 'D4'];
+  List<String> values = ['C3', 'A1', 'D4'];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
