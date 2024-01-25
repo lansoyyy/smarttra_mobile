@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -14,6 +15,7 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
+  Random random = Random();
   List<String> values = ['C3', 'A1', 'D4'];
   @override
   Widget build(BuildContext context) {
@@ -70,7 +72,7 @@ class _LandingScreenState extends State<LandingScreen> {
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          for (int i = 0; i < values.length; i++)
+                          for (int i = 0; i < random.nextInt(3) + 1; i++)
                             Column(
                               children: [
                                 ListTile(
