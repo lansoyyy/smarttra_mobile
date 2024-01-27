@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "352216925523",
+    "project_id": "smarttra-dc027",
+    "storage_bucket": "smarttra-dc027.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:352216925523:android:36629e49f1e6b6db564da6",
+        "android_client_info": {
+          "package_name": "com.example.smarttra"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzkPlEGbCDmttfexxx4nlbzaHgDfhGJq0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
