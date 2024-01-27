@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-Future addRecord(type, lat, long, from, to, passengers) async {
+Future addRecord(type, lat, long, from, to, passengers, time) async {
   final docUser = FirebaseFirestore.instance.collection('Records').doc();
 
   final json = {
@@ -16,7 +15,8 @@ Future addRecord(type, lat, long, from, to, passengers) async {
     'day': DateTime.now().day,
     'month': DateTime.now().month,
     'year': DateTime.now().year,
-    'status': 'Moving'
+    'status': 'Moving',
+    'time': time,
   };
 
   await docUser.set(json);

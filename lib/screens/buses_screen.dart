@@ -1,10 +1,6 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/utlis/colors.dart';
-import 'package:smarttra/widgets/button_widget.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 
 class BusesScreen extends StatefulWidget {
@@ -104,7 +100,9 @@ class BusesScreenState extends State<BusesScreen> {
                                       const SizedBox(
                                         height: 5,
                                       ),
-                                      TextWidget(text: 'N/A', fontSize: 18),
+                                      TextWidget(
+                                          text: data.docs[index]['time'],
+                                          fontSize: 18),
                                     ],
                                   ),
                                 ],
@@ -116,7 +114,8 @@ class BusesScreenState extends State<BusesScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  TextWidget(text: 'Passengers:', fontSize: 18),
+                                  TextWidget(
+                                      text: 'Passengers inside:', fontSize: 18),
                                   TextWidget(
                                       text: '${data.docs[index]['passengers']}',
                                       fontSize: 24),

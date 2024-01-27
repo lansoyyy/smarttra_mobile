@@ -1,12 +1,14 @@
 import 'dart:async';
+import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
 import 'package:smarttra/services/add_record.dart';
 import 'package:smarttra/utlis/colors.dart';
-import 'package:smarttra/widgets/button_widget.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 import 'package:smarttra/widgets/toast_widget.dart';
 
@@ -25,6 +27,7 @@ class MapScreenState extends State<MapScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    getRecords();
     determinePosition();
 
     Geolocator.getCurrentPosition().then((position) {
@@ -53,6 +56,28 @@ class MapScreenState extends State<MapScreen> {
   double lat = 0;
   double long = 0;
 
+  Set<Marker> markers = {};
+
+  Random random = Random();
+
+  getRecords() {
+    FirebaseFirestore.instance
+        .collection('Records')
+        .where('day', isEqualTo: DateTime.now().day)
+        .get()
+        .then((QuerySnapshot querySnapshot) async {
+      for (var doc in querySnapshot.docs) {
+        setState(() {
+          markers.add(Marker(
+              markerId: MarkerId(doc.id),
+              icon: BitmapDescriptor.defaultMarker,
+              position: LatLng(doc['lat'], doc['long']),
+              infoWindow: InfoWindow(title: doc['type'])));
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     CameraPosition kGooglePlex = CameraPosition(
@@ -61,6 +86,7 @@ class MapScreenState extends State<MapScreen> {
     );
     return Scaffold(
         appBar: AppBar(
+          foregroundColor: Colors.black,
           title: TextWidget(text: 'Map', fontSize: 18),
           backgroundColor: Colors.white,
           centerTitle: true,
@@ -82,6 +108,7 @@ class MapScreenState extends State<MapScreen> {
                 child: Stack(
                   children: [
                     GoogleMap(
+                      markers: markers,
                       zoomControlsEnabled: false,
                       mapType: MapType.normal,
                       initialCameraPosition: kGooglePlex,
@@ -277,13 +304,25 @@ class MapScreenState extends State<MapScreen> {
                 ? FloatingActionButton.extended(
                     backgroundColor: Colors.blue,
                     onPressed: () {
+                      addRecord(
+                          widget.type,
+                          lat,
+                          long,
+                          searchController.text,
+                          searchController1.text,
+                          widget.nums,
+                          '${random.nextInt(4) + 1} mins');
+                      showToast(
+                          'Jeep: ${widget.type}, No. of passengers: ${4}\nRecorded succesfully!');
+
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                          builder: (context) => MapScreen(
+                                nums: FlutterBluePlus.connectedDevices.length,
+                                type: widget.type,
+                              )));
                       setState(() {
                         hasclicked = true;
                       });
-                      addRecord(widget.type, lat, long, searchController.text,
-                          searchController1.text, widget.nums);
-                      showToast(
-                          'Jeep: ${widget.type}, No. of passengers: ${4}\nRecorded succesfully!');
                     },
                     label: const Text('Continue'),
                     icon: const Icon(Icons.my_location),
