@@ -21,9 +21,10 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => MapScreenState();
 }
 
-class MapScreenState extends State<MapScreen> {
+class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
     // TODO: implement initState
     super.initState();
     getRecords();
@@ -419,5 +420,26 @@ class MapScreenState extends State<MapScreen> {
     }
 
     return true;
+  }
+
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.inactive) {
+      await FirebaseFirestore.instance
+          .collection('Records')
+          .doc(
+              '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+          .update({
+        'passengers': FieldValue.increment(-1),
+      });
+    }
+
+    /* if (isBackground) {
+      // service.stop();
+    } else {
+      // service.start();
+    }*/
   }
 }

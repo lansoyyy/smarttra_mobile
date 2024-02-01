@@ -120,7 +120,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                                   '',
                                                   '',
                                                   0,
-                                                  '${random.nextInt(4) + 1} mins');
+                                                  '${random.nextInt(14) + 7} mins');
                                             }
                                           });
                                           Navigator.of(context).push(
