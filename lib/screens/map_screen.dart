@@ -76,10 +76,6 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         }
       },
     );
-
-    setState(() {
-      hasloaded = true;
-    });
   }
 
   final Completer<GoogleMapController> _controller =
