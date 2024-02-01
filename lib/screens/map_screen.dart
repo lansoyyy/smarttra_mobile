@@ -3,11 +3,10 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_activity_recognition/flutter_activity_recognition.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
-import 'package:smarttra/services/add_record.dart';
 import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 import 'package:smarttra/widgets/toast_widget.dart';
@@ -30,6 +29,10 @@ class MapScreenState extends State<MapScreen> {
     getRecords();
     determinePosition();
 
+    isPermissionGrants();
+
+    update();
+
     Geolocator.getCurrentPosition().then((position) {
       setState(() {
         lat = position.latitude;
@@ -38,6 +41,43 @@ class MapScreenState extends State<MapScreen> {
       });
     }).catchError((error) {
       print('Error getting location: $error');
+    });
+  }
+
+  bool hasInputted = false;
+
+  update() {
+    // update here
+
+    print('called');
+
+    activityRecognition.activityStream.handleError(
+      (error) {
+        print('asd');
+      },
+    ).listen(
+      (event) async {
+        print('Activity: ${event.type.name}');
+
+        if (event.type.name.toString() == 'IN_VEHICLE') {
+          if (!hasInputted) {
+            await FirebaseFirestore.instance
+                .collection('Records')
+                .doc(
+                    '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+                .update({
+              'passengers': FieldValue.increment(1),
+            });
+            setState(() {
+              hasInputted = true;
+            });
+          }
+        }
+      },
+    );
+
+    setState(() {
+      hasloaded = true;
     });
   }
 
@@ -59,6 +99,13 @@ class MapScreenState extends State<MapScreen> {
   Set<Marker> markers = {};
 
   Random random = Random();
+
+  // Subscribe to the activity stream.
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   getRecords() {
     FirebaseFirestore.instance
@@ -265,14 +312,6 @@ class MapScreenState extends State<MapScreen> {
                                               height: 5,
                                             ),
                                             TextWidget(
-                                              text: 'No. of Passengers: ${4}',
-                                              fontSize: 14,
-                                              color: Colors.white,
-                                            ),
-                                            const SizedBox(
-                                              height: 5,
-                                            ),
-                                            TextWidget(
                                               text: 'Status: Recorded',
                                               fontSize: 14,
                                               color: Colors.green,
@@ -303,28 +342,24 @@ class MapScreenState extends State<MapScreen> {
             : searchController.text != '' && searchController1.text != ''
                 ? FloatingActionButton.extended(
                     backgroundColor: Colors.blue,
-                    onPressed: () {
-                      addRecord(
-                          widget.type,
-                          lat,
-                          long,
-                          searchController.text,
-                          searchController1.text,
-                          widget.nums,
-                          '${random.nextInt(4) + 1} mins');
-                      showToast(
-                          'Jeep: ${widget.type}, No. of passengers: ${4}\nRecorded succesfully!');
+                    onPressed: () async {
+                      // update the from and to
 
-                      Navigator.of(context).pushReplacement(MaterialPageRoute(
-                          builder: (context) => MapScreen(
-                                nums: FlutterBluePlus.connectedDevices.length,
-                                type: widget.type,
-                              )));
+                      await FirebaseFirestore.instance
+                          .collection('Records')
+                          .doc(
+                              '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+                          .update({
+                        'from': searchController.text,
+                        'to': searchController1.text,
+                      });
+
                       setState(() {
                         hasclicked = true;
                       });
+                      showToast('Routes Updated!');
                     },
-                    label: const Text('Continue'),
+                    label: const Text('Update'),
                     icon: const Icon(Icons.my_location),
                   )
                 : const SizedBox());
@@ -365,5 +400,24 @@ class MapScreenState extends State<MapScreen> {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     return await Geolocator.getCurrentPosition();
+  }
+
+  final activityRecognition = FlutterActivityRecognition.instance;
+
+  Future<bool> isPermissionGrants() async {
+    await activityRecognition.requestPermission();
+    // Check if the user has granted permission. If not, request permission.
+    PermissionRequestResult reqResult;
+    reqResult = await activityRecognition.checkPermission();
+    if (reqResult == PermissionRequestResult.PERMANENTLY_DENIED) {
+      return false;
+    } else if (reqResult == PermissionRequestResult.DENIED) {
+      reqResult = await activityRecognition.requestPermission();
+      if (reqResult != PermissionRequestResult.GRANTED) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

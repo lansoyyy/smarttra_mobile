@@ -45,6 +45,7 @@ dependencies:
   firebase_storage:
   firebase_auth:
   flutter_blue_plus:
+  flutter_activity_recognition:
 
 dev_dependencies:
   flutter_test:

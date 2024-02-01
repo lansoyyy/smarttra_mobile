@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future addRecord(type, lat, long, from, to, passengers, time) async {
-  final docUser = FirebaseFirestore.instance.collection('Records').doc();
+  final docUser = FirebaseFirestore.instance.collection('Records').doc(
+      '$type-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}');
 
   final json = {
     'type': type,
@@ -9,7 +10,7 @@ Future addRecord(type, lat, long, from, to, passengers, time) async {
     'long': long,
     'from': from,
     'to': to,
-    'passengers': passengers != 0 ? passengers : 1,
+    'passengers': 0,
     'docId': docUser.id,
     'dateTime': DateTime.now(),
     'day': DateTime.now().day,
