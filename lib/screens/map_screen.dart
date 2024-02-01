@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_activity_recognition/flutter_activity_recognition.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
@@ -33,6 +34,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     isPermissionGrants();
 
     update();
+    remove();
 
     Geolocator.getCurrentPosition().then((position) {
       setState(() {
@@ -76,6 +78,37 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
         }
       },
     );
+  }
+
+  bool hasInputted1 = false;
+
+  remove() {
+    Timer.periodic(const Duration(seconds: 5), (timer) async {
+      FirebaseFirestore.instance
+          .collection('Records')
+          .where('docId',
+              isEqualTo:
+                  '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+          .get()
+          .then((QuerySnapshot querySnapshot) async {
+        if (!hasInputted1) {
+          if (await FlutterBluePlus.isOn == false &&
+              querySnapshot.docs.first["passengers"] > 0) {
+            await FirebaseFirestore.instance
+                .collection('Records')
+                .doc(
+                    '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+                .update({
+              'passengers': FieldValue.increment(-1),
+            });
+
+            setState(() {
+              hasInputted1 = true;
+            });
+          }
+        }
+      });
+    });
   }
 
   final Completer<GoogleMapController> _controller =
@@ -422,15 +455,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
 
-    if (state == AppLifecycleState.inactive) {
-      await FirebaseFirestore.instance
-          .collection('Records')
-          .doc(
-              '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
-          .update({
-        'passengers': FieldValue.increment(-1),
-      });
-    }
+    if (state == AppLifecycleState.inactive) {}
 
     /* if (isBackground) {
       // service.stop();
