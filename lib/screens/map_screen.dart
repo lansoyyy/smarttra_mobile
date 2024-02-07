@@ -60,8 +60,6 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       },
     ).listen(
       (event) async {
-        print('Activity: ${event.type.name}');
-
         if (event.type.name.toString() == 'IN_VEHICLE') {
           if (!hasInputted) {
             await FirebaseFirestore.instance
@@ -70,9 +68,10 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
                 .update({
               'passengers': FieldValue.increment(1),
-            });
-            setState(() {
-              hasInputted = true;
+            }).whenComplete(() {
+              setState(() {
+                hasInputted = true;
+              });
             });
           }
         }
