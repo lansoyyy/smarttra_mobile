@@ -5,12 +5,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_activity_recognition/flutter_activity_recognition.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_google_places/flutter_google_places.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
 import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 import 'package:smarttra/widgets/toast_widget.dart';
+import 'package:google_maps_webservice/places.dart' as location;
+import 'package:google_api_headers/google_api_headers.dart';
+import '../models/coordinate_model.dart';
+import '../utlis/functions.dart';
+import '../utlis/keys.dart';
 
 class MapScreen extends StatefulWidget {
   String type;
@@ -28,7 +35,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // TODO: implement initState
     super.initState();
-    getRecords();
+    // getRecords();
     determinePosition();
 
     isPermissionGrants();
@@ -110,6 +117,9 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     });
   }
 
+  late String pickup = 'From';
+  late String drop = 'To';
+
   final Completer<GoogleMapController> _controller =
       Completer<GoogleMapController>();
 
@@ -129,6 +139,11 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   Random random = Random();
 
+  late Polyline _poly = const Polyline(polylineId: PolylineId('new'));
+
+  List<LatLng> polylineCoordinates = [];
+  PolylinePoints polylinePoints = PolylinePoints();
+
   // Subscribe to the activity stream.
 
   @override
@@ -136,24 +151,44 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  getRecords() {
-    FirebaseFirestore.instance
-        .collection('Records')
-        .where('day', isEqualTo: DateTime.now().day)
-        .get()
-        .then((QuerySnapshot querySnapshot) async {
-      for (var doc in querySnapshot.docs) {
-        setState(() {
-          markers.add(Marker(
-              markerId: MarkerId(doc.id),
-              icon: BitmapDescriptor.defaultMarker,
-              position: LatLng(doc['lat'], doc['long']),
-              infoWindow: InfoWindow(title: doc['type'])));
-        });
-      }
-    });
+  // getRecords() {
+  //   FirebaseFirestore.instance
+  //       .collection('Records')
+  //       .where('day', isEqualTo: DateTime.now().day)
+  //       .get()
+  //       .then((QuerySnapshot querySnapshot) async {
+  //     for (var doc in querySnapshot.docs) {
+  //       setState(() {
+  //         markers.add(Marker(
+  //             markerId: MarkerId(doc.id),
+  //             icon: BitmapDescriptor.defaultMarker,
+  //             position: LatLng(doc['lat'], doc['long']),
+  //             infoWindow: InfoWindow(title: doc['type'])));
+  //       });
+  //     }
+  //   });
+  // }
+
+  late LatLng pickUp;
+  late LatLng dropOff;
+
+  addMyMarker1(lat1, long1) async {
+    markers.add(Marker(
+        icon: BitmapDescriptor.defaultMarker,
+        markerId: const MarkerId("pickup"),
+        position: LatLng(lat1, long1),
+        infoWindow: const InfoWindow(title: 'From')));
   }
 
+  addMyMarker12(lat1, long1) async {
+    markers.add(Marker(
+        icon: BitmapDescriptor.defaultMarker,
+        markerId: const MarkerId("dropOff"),
+        position: LatLng(lat1, long1),
+        infoWindow: const InfoWindow(title: 'To')));
+  }
+
+  GoogleMapController? mapController;
   @override
   Widget build(BuildContext context) {
     CameraPosition kGooglePlex = CameraPosition(
@@ -184,11 +219,13 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                 child: Stack(
                   children: [
                     GoogleMap(
+                      polylines: {_poly},
                       markers: markers,
                       zoomControlsEnabled: false,
                       mapType: MapType.normal,
                       initialCameraPosition: kGooglePlex,
                       onMapCreated: (GoogleMapController controller) {
+                        mapController = controller;
                         _controller.complete(controller);
                       },
                     ),
@@ -209,41 +246,86 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                   Padding(
                                     padding: const EdgeInsets.only(
                                         left: 20, right: 20),
-                                    child: Container(
-                                      height: 40,
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: Colors.black,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(100)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 10, right: 10),
-                                        child: TextFormField(
-                                          style: const TextStyle(
-                                              color: Colors.black,
-                                              fontFamily: 'Regular',
-                                              fontSize: 14),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              nameSearched = value;
-                                            });
-                                          },
-                                          decoration: const InputDecoration(
-                                            filled: true,
-                                            suffixIcon: Icon(Icons.location_on),
-                                            fillColor: Colors.white,
-                                            labelStyle: TextStyle(
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        location.Prediction? p =
+                                            await PlacesAutocomplete.show(
+                                                mode: Mode.overlay,
+                                                context: context,
+                                                apiKey: kGoogleApiKey,
+                                                language: 'en',
+                                                strictbounds: false,
+                                                types: [""],
+                                                decoration: InputDecoration(
+                                                    hintText:
+                                                        'Search Pick-up Location',
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            borderSide:
+                                                                const BorderSide(
+                                                                    color: Colors
+                                                                        .white))),
+                                                components: [
+                                                  location.Component(
+                                                      location
+                                                          .Component.country,
+                                                      "ph")
+                                                ]);
+
+                                        location.GoogleMapsPlaces places =
+                                            location.GoogleMapsPlaces(
+                                                apiKey: kGoogleApiKey,
+                                                apiHeaders:
+                                                    await const GoogleApiHeaders()
+                                                        .getHeaders());
+
+                                        location.PlacesDetailsResponse detail =
+                                            await places.getDetailsByPlaceId(
+                                                p!.placeId!);
+
+                                        addMyMarker1(
+                                            detail
+                                                .result.geometry!.location.lat,
+                                            detail
+                                                .result.geometry!.location.lng);
+
+                                        mapController!.animateCamera(
+                                            CameraUpdate.newLatLngZoom(
+                                                LatLng(
+                                                    detail.result.geometry!
+                                                        .location.lat,
+                                                    detail.result.geometry!
+                                                        .location.lng),
+                                                18.0));
+
+                                        setState(() {
+                                          pickup = detail.result.name;
+                                          pickUp = LatLng(
+                                              detail.result.geometry!.location
+                                                  .lat,
+                                              detail.result.geometry!.location
+                                                  .lng);
+                                        });
+                                      },
+                                      child: Container(
+                                        height: 40,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(
                                               color: Colors.black,
                                             ),
-                                            hintText: 'From:',
-                                            hintStyle: TextStyle(
-                                                fontFamily: 'QRegular'),
-                                          ),
-                                          controller: searchController,
+                                            borderRadius:
+                                                BorderRadius.circular(100)),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 10, right: 10, top: 10),
+                                          child: TextWidget(
+                                              text: pickup, fontSize: 14),
                                         ),
                                       ),
                                     ),
@@ -261,41 +343,157 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                   Padding(
                                     padding: const EdgeInsets.only(
                                         left: 20, right: 20),
-                                    child: Container(
-                                      height: 40,
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          border: Border.all(
-                                            color: Colors.black,
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        location.Prediction? p =
+                                            await PlacesAutocomplete.show(
+                                                mode: Mode.overlay,
+                                                context: context,
+                                                apiKey: kGoogleApiKey,
+                                                language: 'en',
+                                                strictbounds: false,
+                                                types: [""],
+                                                decoration: InputDecoration(
+                                                    hintText:
+                                                        'Search Drop-off Location',
+                                                    focusedBorder:
+                                                        OutlineInputBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        20),
+                                                            borderSide:
+                                                                const BorderSide(
+                                                                    color: Colors
+                                                                        .white))),
+                                                components: [
+                                                  location.Component(
+                                                      location
+                                                          .Component.country,
+                                                      "ph")
+                                                ]);
+
+                                        location.GoogleMapsPlaces places =
+                                            location.GoogleMapsPlaces(
+                                                apiKey: kGoogleApiKey,
+                                                apiHeaders:
+                                                    await const GoogleApiHeaders()
+                                                        .getHeaders());
+
+                                        location.PlacesDetailsResponse detail =
+                                            await places.getDetailsByPlaceId(
+                                                p!.placeId!);
+
+                                        addMyMarker12(
+                                            detail
+                                                .result.geometry!.location.lat,
+                                            detail
+                                                .result.geometry!.location.lng);
+
+                                        setState(() {
+                                          drop = detail.result.name;
+
+                                          dropOff = LatLng(
+                                              detail.result.geometry!.location
+                                                  .lat,
+                                              detail.result.geometry!.location
+                                                  .lng);
+                                        });
+
+                                        PolylineResult result =
+                                            await polylinePoints
+                                                .getRouteBetweenCoordinates(
+                                                    kGoogleApiKey,
+                                                    PointLatLng(pickUp.latitude,
+                                                        pickUp.longitude),
+                                                    PointLatLng(
+                                                        detail.result.geometry!
+                                                            .location.lat,
+                                                        detail.result.geometry!
+                                                            .location.lng));
+                                        if (result.points.isNotEmpty) {
+                                          polylineCoordinates = result.points
+                                              .map((point) => LatLng(
+                                                  point.latitude,
+                                                  point.longitude))
+                                              .toList();
+                                        }
+                                        setState(() {
+                                          _poly = Polyline(
+                                              color: Colors.red,
+                                              polylineId:
+                                                  const PolylineId('route'),
+                                              points: polylineCoordinates,
+                                              width: 4);
+                                        });
+
+                                        mapController!.animateCamera(
+                                            CameraUpdate.newLatLngZoom(
+                                                LatLng(
+                                                    detail.result.geometry!
+                                                        .location.lat,
+                                                    detail.result.geometry!
+                                                        .location.lng),
+                                                18.0));
+
+                                        double miny = (pickUp.latitude <=
+                                                dropOff.latitude)
+                                            ? pickUp.latitude
+                                            : dropOff.latitude;
+                                        double minx = (pickUp.longitude <=
+                                                dropOff.longitude)
+                                            ? pickUp.longitude
+                                            : dropOff.longitude;
+                                        double maxy = (pickUp.latitude <=
+                                                dropOff.latitude)
+                                            ? dropOff.latitude
+                                            : pickUp.latitude;
+                                        double maxx = (pickUp.longitude <=
+                                                dropOff.longitude)
+                                            ? dropOff.longitude
+                                            : pickUp.longitude;
+
+                                        double southWestLatitude = miny;
+                                        double southWestLongitude = minx;
+
+                                        double northEastLatitude = maxy;
+                                        double northEastLongitude = maxx;
+
+                                        // Accommodate the two locations within the
+                                        // camera view of the map
+                                        mapController!.animateCamera(
+                                          CameraUpdate.newLatLngBounds(
+                                            LatLngBounds(
+                                              northeast: LatLng(
+                                                northEastLatitude,
+                                                northEastLongitude,
+                                              ),
+                                              southwest: LatLng(
+                                                southWestLatitude,
+                                                southWestLongitude,
+                                              ),
+                                            ),
+                                            100.0,
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(100)),
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 10, right: 10),
-                                        child: TextFormField(
-                                          style: const TextStyle(
-                                              color: Colors.black,
-                                              fontFamily: 'Regular',
-                                              fontSize: 14),
-                                          onChanged: (value) {
-                                            setState(() {
-                                              nameSearched1 = value;
-                                            });
-                                          },
-                                          decoration: const InputDecoration(
-                                            suffixIcon: Icon(Icons.location_on),
-                                            filled: true,
-                                            fillColor: Colors.white,
-                                            labelStyle: TextStyle(
+                                        );
+                                      },
+                                      child: Container(
+                                        height: 40,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border.all(
                                               color: Colors.black,
                                             ),
-                                            hintText: 'To:',
-                                            hintStyle: TextStyle(
-                                                fontFamily: 'QRegular'),
+                                            borderRadius:
+                                                BorderRadius.circular(100)),
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: 10, right: 10, top: 10),
+                                          child: TextWidget(
+                                            text: drop,
+                                            fontSize: 14,
                                           ),
-                                          controller: searchController1,
                                         ),
                                       ),
                                     ),
@@ -368,10 +566,19 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               ),
         floatingActionButton: hasclicked
             ? const SizedBox()
-            : searchController.text != '' && searchController1.text != ''
+            : pickup != 'From' && drop != 'To'
                 ? FloatingActionButton.extended(
                     backgroundColor: Colors.blue,
                     onPressed: () async {
+                      final origin = Coordinate(pickUp.latitude,
+                          pickUp.longitude); // Example coordinates
+                      final destination = Coordinate(dropOff.latitude,
+                          dropOff.longitude); // Example coordinates
+
+                      final travelTime =
+                          TravelTimeCalculator.estimateTravelTime(
+                              origin, destination);
+
                       // update the from and to
 
                       await FirebaseFirestore.instance
@@ -379,8 +586,9 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                           .doc(
                               '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
                           .update({
-                        'from': searchController.text,
-                        'to': searchController1.text,
+                        'from': pickup,
+                        'to': drop,
+                        'time': '$travelTime minutes'
                       });
 
                       setState(() {

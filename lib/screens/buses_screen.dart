@@ -22,7 +22,7 @@ class BusesScreenState extends State<BusesScreen> {
     return Scaffold(
         appBar: AppBar(
           foregroundColor: primary,
-          title: TextWidget(text: 'Available Buses', fontSize: 18),
+          title: TextWidget(text: 'Available Jeepneys', fontSize: 18),
           backgroundColor: Colors.white,
           centerTitle: true,
         ),
