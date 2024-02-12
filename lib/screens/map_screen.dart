@@ -10,6 +10,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
+import 'package:smarttra/screens/landing_screen.dart';
 import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 import 'package:smarttra/widgets/toast_widget.dart';
@@ -86,6 +87,67 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     );
   }
 
+  update1() {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      Geolocator.getCurrentPosition().then((position) async {
+        PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+            kGoogleApiKey,
+            PointLatLng(position.latitude, position.longitude),
+            PointLatLng(dropOff.latitude, dropOff.longitude));
+        if (result.points.isNotEmpty) {
+          polylineCoordinates = result.points
+              .map((point) => LatLng(point.latitude, point.longitude))
+              .toList();
+        }
+        setState(() {
+          _poly = Polyline(
+              color: Colors.red,
+              polylineId: const PolylineId('route'),
+              points: polylineCoordinates,
+              width: 4);
+        });
+
+        double miny =
+            (lat <= dropOff.latitude) ? position.latitude : dropOff.latitude;
+        double minx = (position.longitude <= dropOff.longitude)
+            ? position.longitude
+            : dropOff.longitude;
+        double maxy = (position.latitude <= dropOff.latitude)
+            ? dropOff.latitude
+            : position.latitude;
+        double maxx = (position.longitude <= dropOff.longitude)
+            ? dropOff.longitude
+            : position.longitude;
+
+        double southWestLatitude = miny;
+        double southWestLongitude = minx;
+
+        double northEastLatitude = maxy;
+        double northEastLongitude = maxx;
+
+        // Accommodate the two locations within the
+        // camera view of the map
+        mapController!.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            LatLngBounds(
+              northeast: LatLng(
+                northEastLatitude,
+                northEastLongitude,
+              ),
+              southwest: LatLng(
+                southWestLatitude,
+                southWestLongitude,
+              ),
+            ),
+            100.0,
+          ),
+        );
+      }).catchError((error) {
+        print('Error getting location: $error');
+      });
+    });
+  }
+
   bool hasInputted1 = false;
 
   remove() {
@@ -117,7 +179,6 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     });
   }
 
-  late String pickup = 'From';
   late String drop = 'To';
 
   final Completer<GoogleMapController> _controller =
@@ -169,7 +230,6 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   //   });
   // }
 
-  late LatLng pickUp;
   late LatLng dropOff;
 
   addMyMarker1(lat1, long1) async {
@@ -201,14 +261,61 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           title: TextWidget(text: 'Map', fontSize: 18),
           backgroundColor: Colors.white,
           centerTitle: true,
+          leading: IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const BusesScreen()));
+            },
+            icon: Icon(
+              Icons.bus_alert_outlined,
+              color: primary,
+            ),
+          ),
           actions: [
             IconButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const BusesScreen()));
+                showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                          title: const Text(
+                            'Logout Confirmation',
+                            style: TextStyle(
+                                fontFamily: 'QBold',
+                                fontWeight: FontWeight.bold),
+                          ),
+                          content: const Text(
+                            'Are you sure you want to Logout?',
+                            style: TextStyle(fontFamily: 'QRegular'),
+                          ),
+                          actions: <Widget>[
+                            MaterialButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text(
+                                'Close',
+                                style: TextStyle(
+                                    fontFamily: 'QRegular',
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            MaterialButton(
+                              onPressed: () async {
+                                Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LoginPage()));
+                              },
+                              child: const Text(
+                                'Continue',
+                                style: TextStyle(
+                                    fontFamily: 'QRegular',
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ));
               },
               icon: Icon(
-                Icons.bus_alert_outlined,
+                Icons.logout,
                 color: primary,
               ),
             ),
@@ -219,6 +326,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                 child: Stack(
                   children: [
                     GoogleMap(
+                      myLocationEnabled: true,
                       polylines: {_poly},
                       markers: markers,
                       zoomControlsEnabled: false,
@@ -234,7 +342,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                             padding: const EdgeInsets.all(20.0),
                             child: Container(
                               width: 500,
-                              height: 150,
+                              height: 100,
                               decoration: BoxDecoration(
                                 color: primary.withOpacity(0.5),
                                 borderRadius: BorderRadius.circular(10),
@@ -243,93 +351,6 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 20, right: 20),
-                                    child: GestureDetector(
-                                      onTap: () async {
-                                        location.Prediction? p =
-                                            await PlacesAutocomplete.show(
-                                                mode: Mode.overlay,
-                                                context: context,
-                                                apiKey: kGoogleApiKey,
-                                                language: 'en',
-                                                strictbounds: false,
-                                                types: [""],
-                                                decoration: InputDecoration(
-                                                    hintText:
-                                                        'Search Pick-up Location',
-                                                    focusedBorder:
-                                                        OutlineInputBorder(
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20),
-                                                            borderSide:
-                                                                const BorderSide(
-                                                                    color: Colors
-                                                                        .white))),
-                                                components: [
-                                                  location.Component(
-                                                      location
-                                                          .Component.country,
-                                                      "ph")
-                                                ]);
-
-                                        location.GoogleMapsPlaces places =
-                                            location.GoogleMapsPlaces(
-                                                apiKey: kGoogleApiKey,
-                                                apiHeaders:
-                                                    await const GoogleApiHeaders()
-                                                        .getHeaders());
-
-                                        location.PlacesDetailsResponse detail =
-                                            await places.getDetailsByPlaceId(
-                                                p!.placeId!);
-
-                                        addMyMarker1(
-                                            detail
-                                                .result.geometry!.location.lat,
-                                            detail
-                                                .result.geometry!.location.lng);
-
-                                        mapController!.animateCamera(
-                                            CameraUpdate.newLatLngZoom(
-                                                LatLng(
-                                                    detail.result.geometry!
-                                                        .location.lat,
-                                                    detail.result.geometry!
-                                                        .location.lng),
-                                                18.0));
-
-                                        setState(() {
-                                          pickup = detail.result.name;
-                                          pickUp = LatLng(
-                                              detail.result.geometry!.location
-                                                  .lat,
-                                              detail.result.geometry!.location
-                                                  .lng);
-                                        });
-                                      },
-                                      child: Container(
-                                        height: 40,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            border: Border.all(
-                                              color: Colors.black,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(100)),
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                              left: 10, right: 10, top: 10),
-                                          child: TextWidget(
-                                              text: pickup, fontSize: 14),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
                                   const Padding(
                                     padding: EdgeInsets.only(
                                         left: 20,
@@ -404,8 +425,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                             await polylinePoints
                                                 .getRouteBetweenCoordinates(
                                                     kGoogleApiKey,
-                                                    PointLatLng(pickUp.latitude,
-                                                        pickUp.longitude),
+                                                    PointLatLng(lat, long),
                                                     PointLatLng(
                                                         detail.result.geometry!
                                                             .location.lat,
@@ -436,22 +456,20 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                                                         .location.lng),
                                                 18.0));
 
-                                        double miny = (pickUp.latitude <=
-                                                dropOff.latitude)
-                                            ? pickUp.latitude
+                                        double miny = (lat <= dropOff.latitude)
+                                            ? lat
                                             : dropOff.latitude;
-                                        double minx = (pickUp.longitude <=
-                                                dropOff.longitude)
-                                            ? pickUp.longitude
-                                            : dropOff.longitude;
-                                        double maxy = (pickUp.latitude <=
-                                                dropOff.latitude)
+                                        double minx =
+                                            (long <= dropOff.longitude)
+                                                ? long
+                                                : dropOff.longitude;
+                                        double maxy = (lat <= dropOff.latitude)
                                             ? dropOff.latitude
-                                            : pickUp.latitude;
-                                        double maxx = (pickUp.longitude <=
-                                                dropOff.longitude)
-                                            ? dropOff.longitude
-                                            : pickUp.longitude;
+                                            : lat;
+                                        double maxx =
+                                            (long <= dropOff.longitude)
+                                                ? dropOff.longitude
+                                                : long;
 
                                         double southWestLatitude = miny;
                                         double southWestLongitude = minx;
@@ -566,12 +584,12 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
               ),
         floatingActionButton: hasclicked
             ? const SizedBox()
-            : pickup != 'From' && drop != 'To'
+            : drop != 'To'
                 ? FloatingActionButton.extended(
                     backgroundColor: Colors.blue,
                     onPressed: () async {
-                      final origin = Coordinate(pickUp.latitude,
-                          pickUp.longitude); // Example coordinates
+                      final origin =
+                          Coordinate(lat, long); // Example coordinates
                       final destination = Coordinate(dropOff.latitude,
                           dropOff.longitude); // Example coordinates
 
@@ -586,10 +604,12 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                           .doc(
                               '${widget.type}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
                           .update({
-                        'from': pickup,
+                        'from': '',
                         'to': drop,
                         'time': '$travelTime minutes'
                       });
+
+                      update1();
 
                       setState(() {
                         hasclicked = true;
