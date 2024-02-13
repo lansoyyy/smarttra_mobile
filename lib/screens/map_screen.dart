@@ -10,7 +10,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:smarttra/screens/buses_screen.dart';
-import 'package:smarttra/screens/landing_screen.dart';
+import 'package:smarttra/screens/login_screen.dart';
 import 'package:smarttra/utlis/colors.dart';
 import 'package:smarttra/widgets/text_widget.dart';
 import 'package:smarttra/widgets/toast_widget.dart';

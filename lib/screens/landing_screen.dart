@@ -1,38 +1,24 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:smarttra/screens/login_screen.dart';
 import 'package:smarttra/screens/map_screen.dart';
+import 'package:smarttra/services/add_record.dart';
+import 'package:smarttra/utlis/colors.dart';
+import 'package:smarttra/widgets/button_widget.dart';
+import 'package:smarttra/widgets/text_widget.dart';
 
-import '../../../widgets/textfield_widget.dart';
-import '../../../widgets/toast_widget.dart';
-
-import '../services/add_record.dart';
-import '../utlis/app_constants.dart';
-import '../utlis/colors.dart';
-import '../widgets/app_text_form_field.dart';
-import '../widgets/text_widget.dart';
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LandingScreen extends StatefulWidget {
+  const LandingScreen({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LandingScreen> createState() => _LandingScreenState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-
-  bool isObscure = true;
-
-  Random random = Random();
-  List<String> values = ['C3', 'A1', 'D4'];
-
+class _LandingScreenState extends State<LandingScreen> {
   bool hasloaded = false;
   double lat = 0;
   double long = 0;
@@ -54,428 +40,163 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
   }
 
+  Random random = Random();
+  List<String> values = ['C3', 'A1', 'D4'];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.orange[50],
       body: hasloaded
-          ? SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Container(
-                      height: 350,
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[50],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Image.asset(
-                              'assets/images/default_logo.png',
-                              width: 200,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 20,
-                          ),
-                          const Text(
-                            'Sign in to your\nAccount',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 24,
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 6,
-                          ),
-                          const Text(
-                            'Sign in to your Account',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w200,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 30),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppTextFormField(
-                            labelText: 'Email',
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            onChanged: (value) {
-                              _formKey.currentState?.validate();
-                            },
-                            validator: (value) {
-                              return value!.isEmpty
-                                  ? 'Please, Enter Email Address'
-                                  : AppConstants.emailRegex.hasMatch(value)
-                                      ? null
-                                      : 'Invalid Email Address';
-                            },
-                            controller: emailController,
-                          ),
-                          AppTextFormField(
-                            labelText: 'Password',
-                            keyboardType: TextInputType.visiblePassword,
-                            textInputAction: TextInputAction.done,
-                            onChanged: (value) {
-                              _formKey.currentState?.validate();
-                            },
-                            controller: passwordController,
-                            obscureText: isObscure,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.only(right: 15),
-                              child: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    isObscure = !isObscure;
-                                  });
-                                },
-                                style: ButtonStyle(
-                                  minimumSize: MaterialStateProperty.all(
-                                    const Size(48, 48),
+          ? Center(
+              child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  height: 100,
+                ),
+                Image.asset(
+                  'assets/images/default_logo.png',
+                  width: 250,
+                ),
+                const SizedBox(
+                  height: 50,
+                ),
+                ButtonWidget(
+                  label: 'Continue',
+                  onPressed: () async {
+                    await FlutterBluePlus.turnOn().then((value) async {
+                      setState(() {
+                        values.shuffle();
+                      });
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return const AlertDialog(
+                            title: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(
+                                  height: 20,
+                                ),
+                                Text(
+                                  'Loading. . . ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
                                   ),
                                 ),
-                                icon: Icon(
-                                  isObscure
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                  color: Colors.black,
-                                ),
-                              ),
+                              ],
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: ((context) {
-                                  final formKey = GlobalKey<FormState>();
-                                  final TextEditingController emailController =
-                                      TextEditingController();
-
-                                  return AlertDialog(
-                                    title: TextWidget(
-                                      text: 'Forgot Password',
-                                      fontSize: 14,
-                                      color: Colors.black,
-                                    ),
-                                    content: Form(
-                                      key: formKey,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          TextFieldWidget(
-                                            hint: 'Email',
-                                            textCapitalization:
-                                                TextCapitalization.none,
-                                            inputType:
-                                                TextInputType.emailAddress,
-                                            label: 'Email',
-                                            controller: emailController,
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'Please enter an email address';
-                                              }
-                                              final emailRegex = RegExp(
-                                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                                              if (!emailRegex.hasMatch(value)) {
-                                                return 'Please enter a valid email address';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: (() {
-                                          Navigator.pop(context);
-                                        }),
-                                        child: TextWidget(
-                                          text: 'Cancel',
-                                          fontSize: 12,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: (() async {
-                                          if (formKey.currentState!
-                                              .validate()) {
-                                            try {
-                                              Navigator.pop(context);
-                                              await FirebaseAuth.instance
-                                                  .sendPasswordResetEmail(
-                                                      email:
-                                                          emailController.text);
-                                              showToast(
-                                                  'Password reset link sent to ${emailController.text}');
-                                            } catch (e) {
-                                              String errorMessage = '';
-
-                                              if (e is FirebaseException) {
-                                                switch (e.code) {
-                                                  case 'invalid-email':
-                                                    errorMessage =
-                                                        'The email address is invalid.';
-                                                    break;
-                                                  case 'user-not-found':
-                                                    errorMessage =
-                                                        'The user associated with the email address is not found.';
-                                                    break;
-                                                  default:
-                                                    errorMessage =
-                                                        'An error occurred while resetting the password.';
-                                                }
-                                              } else {
-                                                errorMessage =
-                                                    'An error occurred while resetting the password.';
-                                              }
-
-                                              showToast(errorMessage);
-                                              Navigator.pop(context);
+                          );
+                        },
+                      );
+                      await Future.delayed(const Duration(seconds: 3));
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: TextWidget(
+                                text: 'Scanned devices', fontSize: 18),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (int i = 0; i < random.nextInt(3) + 1; i++)
+                                  Column(
+                                    children: [
+                                      ListTile(
+                                        onTap: () async {
+                                          await FirebaseFirestore.instance
+                                              .collection('Records')
+                                              .doc(
+                                                  '${values[i]}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
+                                              .get()
+                                              .then((DocumentSnapshot
+                                                  documentSnapshot) {
+                                            if (documentSnapshot.exists) {
+                                              print(
+                                                  'Document exists on the database');
+                                            } else {
+                                              addRecord(
+                                                  values[i],
+                                                  lat,
+                                                  long,
+                                                  '',
+                                                  '',
+                                                  0,
+                                                  '${random.nextInt(14) + 7} mins');
                                             }
-                                          }
-                                        }),
-                                        child: TextWidget(
-                                          text: 'Continue',
+                                          });
+                                          Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      MapScreen(
+                                                        nums: FlutterBluePlus
+                                                            .connectedDevices
+                                                            .length,
+                                                        type: values[i],
+                                                      )));
+                                        },
+                                        leading: const Icon(
+                                          Icons.bluetooth,
+                                          color: Colors.blue,
+                                        ),
+                                        trailing: const Icon(
+                                          Icons.arrow_right,
+                                        ),
+                                        title: TextWidget(
+                                          text: values[i],
                                           fontSize: 14,
-                                          color: Colors.black,
+                                          color: Colors.grey,
                                         ),
                                       ),
+                                      const Divider(),
                                     ],
-                                  );
-                                }),
-                              );
-                            },
-                            style: Theme.of(context).textButtonTheme.style,
-                            child: Text(
-                              'Forgot Password?',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: primary,
-                                    fontWeight: FontWeight.bold,
                                   ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(
-                            height: 15,
-                          ),
-                          FilledButton(
-                            onPressed: () {
-                              login(context);
-                            },
-                            style: const ButtonStyle().copyWith(
-                              backgroundColor: MaterialStateProperty.all(
-                                Colors.blue,
-                              ),
-                            ),
-                            child: const Text('Login'),
-                          ),
-                          const SizedBox(
-                            height: 100,
-                          ),
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: Divider(
-                          //         color: Colors.grey.shade200,
-                          //       ),
-                          //     ),
-                          //     Padding(
-                          //       padding: const EdgeInsets.symmetric(
-                          //         horizontal: 20,
-                          //       ),
-                          //       child: Text(
-                          //         'Or login with',
-                          //         style: Theme.of(context)
-                          //             .textTheme
-                          //             .bodySmall
-                          //             ?.copyWith(color: Colors.black),
-                          //       ),
-                          //     ),
-                          //     Expanded(
-                          //       child: Divider(
-                          //         color: Colors.grey.shade200,
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                          // const SizedBox(
-                          //   height: 30,
-                          // ),
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: OutlinedButton.icon(
-                          //         onPressed: () {},
-                          //         style: Theme.of(context).outlinedButtonTheme.style,
-                          //         icon: SvgPicture.asset(
-                          //           Vectors.googleIcon,
-                          //           width: 14,
-                          //         ),
-                          //         label: const Text(
-                          //           'Google',
-                          //           style: TextStyle(color: Colors.black),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //     const SizedBox(
-                          //       width: 20,
-                          //     ),
-                          //     Expanded(
-                          //       child: OutlinedButton.icon(
-                          //         onPressed: () {},
-                          //         style: Theme.of(context).outlinedButtonTheme.style,
-                          //         icon: SvgPicture.asset(
-                          //           Vectors.facebookIcon,
-                          //           width: 14,
-                          //         ),
-                          //         label: const Text(
-                          //           'Facebook',
-                          //           style: TextStyle(color: Colors.black),
-                          //         ),
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                        ],
-                      ),
+                          );
+                        },
+                      );
+                    });
+                  },
+                ),
+                const Expanded(
+                    child: SizedBox(
+                  height: 50,
+                )),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextWidget(
+                      text: 'Not a passenger?',
+                      fontSize: 14,
+                      color: Colors.black,
                     ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (context) => const LoginPage()));
+                      },
+                      child: TextWidget(
+                        text: 'Login',
+                        fontSize: 16,
+                        color: primary,
+                        fontFamily: 'Bold',
+                      ),
+                    )
                   ],
                 ),
-              ),
-            )
+                const SizedBox(
+                  height: 50,
+                ),
+              ],
+            ))
           : const Center(
               child: CircularProgressIndicator(),
             ),
     );
-  }
-
-  login(context) async {
-    try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: emailController.text, password: passwordController.text);
-
-      await FlutterBluePlus.turnOn().then((value) async {
-        setState(() {
-          values.shuffle();
-        });
-        showDialog(
-          context: context,
-          builder: (context) {
-            return const AlertDialog(
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Text(
-                    'Loading. . . ',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-        await Future.delayed(const Duration(seconds: 3));
-        Navigator.pop(context);
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: TextWidget(text: 'Scanned devices', fontSize: 18),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (int i = 0; i < random.nextInt(3) + 1; i++)
-                    Column(
-                      children: [
-                        ListTile(
-                          onTap: () async {
-                            await FirebaseFirestore.instance
-                                .collection('Records')
-                                .doc(
-                                    '${values[i]}-${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}')
-                                .get()
-                                .then((DocumentSnapshot documentSnapshot) {
-                              if (documentSnapshot.exists) {
-                                print('Document exists on the database');
-                              } else {
-                                addRecord(values[i], lat, long, '', '', 0,
-                                    '${random.nextInt(14) + 7} mins');
-                              }
-                            });
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => MapScreen(
-                                      nums: FlutterBluePlus
-                                          .connectedDevices.length,
-                                      type: values[i],
-                                    )));
-
-                            showToast('Logged in succesfully!');
-                          },
-                          leading: const Icon(
-                            Icons.bluetooth,
-                            color: Colors.blue,
-                          ),
-                          trailing: const Icon(
-                            Icons.arrow_right,
-                          ),
-                          title: TextWidget(
-                            text: values[i],
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const Divider(),
-                      ],
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      });
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found') {
-        showToast("No user found with that email.");
-      } else if (e.code == 'wrong-password') {
-        showToast("Wrong password provided for that user.");
-      } else if (e.code == 'invalid-email') {
-        showToast("Invalid email provided.");
-      } else if (e.code == 'user-disabled') {
-        showToast("User account has been disabled.");
-      } else {
-        showToast("An error occurred: ${e.message}");
-      }
-    } on Exception catch (e) {
-      showToast("An error occurred: $e");
-    }
   }
 
   Future<Position> determinePosition() async {
