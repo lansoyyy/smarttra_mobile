@@ -327,7 +327,7 @@ class MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                   children: [
                     GoogleMap(
                       myLocationEnabled: true,
-                      polylines: {_poly},
+                      // polylines: {_poly},
                       markers: markers,
                       zoomControlsEnabled: false,
                       mapType: MapType.normal,
